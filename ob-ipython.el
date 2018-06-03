@@ -242,8 +242,20 @@ loops etc. If things get really desparate try `ob-ipython-kill-kernel'."
 a new kernel will be started."
   (interactive (ob-ipython--choose-kernel))
   (when proc
-    (delete-process proc)
-    (message (format "Killed %s" (process-name proc)))))
+    ;; thanks to @Kitchin for this ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+    ;; will remove kernel files in jupyters runtime dir
+    (let* ((proc-name (process-name proc))
+	   (proc-buffer (format "*ob-ipython-%s*" proc-name))
+	   (cfile (expand-file-name
+		   (format "%s.json" (s-replace "kernel-" "emacs-" proc-name))
+		   (s-trim (shell-command-to-string "jupyter --runtime-dir")))))
+      (when (f-exists? cfile)
+	(f-delete cfile))
+      ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+      (delete-process proc)
+      (kill-buffer (process-buffer proc))
+      (setq header-line nil)
+      (message (format "Killed %s" (process-name proc))))))
 
 ;; evaluation
 
